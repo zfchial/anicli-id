@@ -1,159 +1,135 @@
-# 🎌 anicli-id
+# anicli-id
 
 **Nonton anime subtitle Indonesia langsung dari terminal!**
 
-CLI tool untuk streaming anime Sub Indo dari [Otakudesu](https://otakudesu.blog) via **mpv** player.
+CLI tool untuk streaming & download anime Sub Indo dari **Otakudesu** dan **Samehadaku** via **mpv** player.
 
 ![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
-![Source](https://img.shields.io/badge/Source-Otakudesu-red.svg)
+![Version](https://img.shields.io/badge/Version-0.3.0-orange.svg)
 
-## ✨ Fitur
+## Fitur
 
-- 🔍 **Search** anime berdasarkan judul
-- 📺 **Pilih episode** dari daftar lengkap
-- 🎬 **Stream langsung** via mpv (atau download)
-- 💅 **Tampilan cantik** dengan Rich library
-- ⚡ **Quick mode** — langsung play dari command line
+- Multi-source: Otakudesu + Samehadaku
+- Stream langsung via mpv (direct MP4, tanpa yt-dlp pun jalan)
+- Download episode (yt-dlp / curl / wget)
+- Marathon mode — auto-play episode berurutan
+- Quick mode — langsung play dari command line
+- Tampilan CLI dengan Rich
 
-## 📦 Instalasi
+## Instalasi
 
-### Prasyarat
-
-```bash
-# Install mpv (wajib untuk streaming)
-# Debian / Ubuntu
-sudo apt install mpv
-
-# Arch Linux
-sudo pacman -S mpv
-
-# Fedora
-sudo dnf install mpv
-
-# macOS
-brew install mpv
-
-# Windows (via Chocolatey)
-choco install mpv
-```
-
-### Install anicli-id
+### Linux
 
 ```bash
-# Clone repository
-git clone https://github.com/user/anicli-id.git
+# Install mpv
+sudo apt install mpv          # Debian/Ubuntu
+sudo pacman -S mpv            # Arch
+sudo dnf install mpv          # Fedora
+
+# (Opsional tapi recommended)
+pip install yt-dlp
+
+# Clone & install
+git clone https://github.com/zfchial/anicli-id.git
 cd anicli-id
-
-# Install dependencies & package
 pip install -e .
-
-# Atau install langsung dari GitHub
-pip install git+https://github.com/user/anicli-id.git
 ```
 
-## 🚀 Cara Pakai
+### Windows
 
-### Mode Interaktif (Recommended)
+```powershell
+# 1. Install Python 3.9+ dari python.org (centang "Add to PATH")
+
+# 2. Install mpv (pilih salah satu):
+#    - Download dari https://mpv.io/installation/ lalu tambah ke PATH
+#    - Atau via Chocolatey:
+choco install mpv
+#    - Atau via Scoop:
+scoop install mpv
+
+# 3. (Opsional) Install yt-dlp
+pip install yt-dlp
+
+# 4. Clone & install
+git clone https://github.com/zfchial/anicli-id.git
+cd anicli-id
+pip install -e .
+```
+
+### macOS
+
+```bash
+brew install mpv
+pip install yt-dlp  # opsional
+
+git clone https://github.com/zfchial/anicli-id.git
+cd anicli-id
+pip install -e .
+```
+
+## Cara Pakai
+
+### Mode Interaktif
 
 ```bash
 anicli-id
 ```
 
-Lalu ikuti prompt:
-1. Masukkan judul anime
-2. Pilih anime dari hasil pencarian
-3. Pilih episode
-4. Pilih kualitas/sumber video
-5. Play atau Download!
+Flow: Pilih source → Search → Pilih anime → Pilih episode → Play/Download
 
 ### Quick Mode
 
 ```bash
-# Cari dan play episode terbaru
-anicli-id "frieren"
-
-# Play episode spesifik
-anicli-id "jujutsu kaisen" --episode 15
-
-# Singkat
-anicli-id "sousou no frieren" -e 10
+anicli-id "frieren"                  # Play episode terbaru
+anicli-id "frieren" -e 10            # Play episode 10
+anicli-id "frieren" -d -e 10         # Download episode 10
+anicli-id "frieren" -d -e 5 -q 480p  # Download 480p
 ```
 
-## 📸 Screenshot
+### Opsi CLI
 
-```
-╔═════════════════════════════════════════╗
-║                                       ║
-║     🎌  ANICLI-ID  🎌                 ║
-║     Nonton Anime Sub Indo             ║
-║     Langsung dari Terminal            ║
-║                                       ║
-║     Source: Otakudesu                 ║
-║                                       ║
-╚═════════════════════════════════════════╝
+| Flag | Fungsi |
+|------|--------|
+| `-e`, `--episode` | Nomor episode |
+| `-d`, `--download` | Download mode |
+| `-q`, `--quality` | Kualitas: 360p / 480p / 720p / 1080p / best |
+| `-s`, `--source` | Source: otakudesu / samehadaku / all |
+| `-m`, `--marathon` | Marathon mode (auto-play) |
+| `-v`, `--version` | Tampilkan versi |
 
-🔍 Cari anime yang ingin ditonton
+## Dependencies
 
-> frieren
+| Package | Versi | Fungsi |
+|---------|-------|--------|
+| `requests` | >= 2.31 | HTTP requests |
+| `beautifulsoup4` | >= 4.12 | HTML parsing |
+| `rich` | >= 13.0 | Tampilan terminal |
+| `mpv` | - | Video player (external) |
+| `yt-dlp` | - | Opsional, fallback downloader |
 
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃        🔍 Hasil Pencarian              ┃
-┣━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━┫
-┃  #   ┃ Judul                 ┃ Status  ┃Rating ┃ Genre     ┃
-┡━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━┩
-│  1   │ Sousou no Frieren... │ Ongoing │ 9.39  │ Adventure │
-│  2   │ Sousou no Frieren... │Completed│ 8.99  │ Fantasy   │
-└──────┴──────────────────────┴─────────┴───────┴───────────┘
-
-> Pilih nomor anime [1]: 
-
-📺 Daftar Episode
-┏━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃  #   ┃ Episode  ┃ Judul                         ┃
-┡━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│  1   │ Episode 1 │ Sousou no Frieren S2 Ep 1... │
-│  2   │ Episode 2 │ Sousou no Frieren S2 Ep 2... │
-│ ...  │   ...    │             ...               │
-│ 10   │ Episode 10│ Sousou no Frieren S2 Ep 10.. │
-└──────┴──────────┴───────────────────────────────┘
-
-▶️  Memutar: Sousou no Frieren Season 2 - Episode 10
-   Kualitas: 720p
-   Tekan 'q' untuk keluar, spasi untuk pause
-```
-
-## 🔧 Dependencies
-
-| Package      | Versi   | Fungsi                        |
-|--------------|---------|-------------------------------|
-| `requests`   | ≥2.31   | HTTP requests ke Otakudesu    |
-| `beautifulsoup4` | ≥4.12 | HTML parsing                  |
-| `rich`       | ≥13.0   | Tampilan terminal yang cantik |
-| `mpv`        | -       | Video player (external)       |
-
-## 🏗 Struktur Proyek
+## Struktur
 
 ```
 anicli-id/
 ├── anicli_id/
-│   ├── __init__.py      # Package info
-│   ├── __main__.py      # Entry point
-│   ├── cli.py           # Interface & flow logic
-│   ├── scraper.py       # Otakudesu scraper
-│   └── player.py        # mpv integration
-├── pyproject.toml       # Package config
-└── README.md            # Dokumentasi ini
+│   ├── __init__.py
+│   ├── __main__.py       # Entry point + argparse
+│   ├── cli.py            # Interface & flow logic
+│   ├── player.py         # mpv/yt-dlp playback & download
+│   ├── sources.py        # Multi-source abstraction
+│   └── scrapers/
+│       ├── __init__.py   # Source registry
+│       ├── otakudesu.py  # Otakudesu scraper
+│       └── samehadaku.py # Samehadaku scraper
+├── pyproject.toml
+└── README.md
 ```
 
-## 🤝 Kontribusi
+## Disclaimer
 
-Contributions are welcome! Feel free to open issues or PRs.
+Tool ini hanya untuk penggunaan pribadi. Dukung official release anime dengan menonton dari platform resmi!
 
-## ⚠️ Disclaimer
-
-Tool ini hanya untuk **penggunaan pribadi**. Dukungi official release anime dengan menonton dari platform resmi!
-
-## 📜 License
+## License
 
 MIT License
