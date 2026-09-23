@@ -59,7 +59,7 @@ def play_video(url: str, quality: str = "", title: str = "", use_ytdlp: bool = T
 def play_multiple(video_list: list[tuple], title_prefix: str = "") -> bool:
     """
     Putar MULTIPLE video berurutan (auto-play mode).
-    video_list: list of (url, quality, title)
+    video_list: list of (url, quality, title, use_ytdlp)
     Setelah satu video selesai, langsung play video berikutnya.
     Pengguna bisa menekan Ctrl+C untuk stop auto-play.
     """
@@ -68,12 +68,17 @@ def play_multiple(video_list: list[tuple], title_prefix: str = "") -> bool:
     console.print(f"\n[bold cyan]🎬 AUTO-PLAY MODE: {total} episode[/bold cyan]")
     console.print(f"   [dim]Tekan Ctrl+C untuk stop auto-play[/dim]\n")
     
-    for i, (url, quality, title) in enumerate(video_list, 1):
+    for i, item in enumerate(video_list, 1):
+        url = item[0]
+        quality = item[1]
+        title = item[2]
+        use_ytdlp = item[3] if len(item) > 3 else True
+        
         full_title = f"{title_prefix} - {title}" if title_prefix else title
         console.print(f"\n[cyan]▶️  [{i}/{total}] {full_title}[/cyan]")
         
         try:
-            success = play_video(url, quality=quality, title=full_title)
+            success = play_video(url, quality=quality, title=full_title, use_ytdlp=use_ytdlp)
             if not success:
                 console.print(f"[yellow]⚠️  Gagal memutar episode {i}. Skip ke berikutnya...[/yellow]")
         except KeyboardInterrupt:
@@ -88,12 +93,13 @@ def _play_with_ytdlp(url: str, quality: str = "", title: str = "") -> bool:
     """Play video using mpv + yt-dlp pipe."""
     display_title = title or "Anime"
     
+    fmt = _get_ytdlp_format(quality)
     cmd = [
         "mpv",
         f"--title={display_title}",
         "--force-window=immediate",
         "--ytdl",
-        "--ytdl-format", _get_ytdlp_format(quality),
+        f"--ytdl-format={fmt}",
         "--",
         url,
     ]

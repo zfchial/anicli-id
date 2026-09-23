@@ -398,8 +398,9 @@ def flow_search_and_play():
         
         ep_title = first["title"]
         play_title = f"{anime_title} - {ep_title}"
+        needs_ytdlp = vid.get("source") != "direct_stream"
         
-        play_video(stream_url, quality=vid["quality"], title=play_title)
+        play_video(stream_url, quality=vid["quality"], title=play_title, use_ytdlp=needs_ytdlp)
         
         # Tanya mau auto-play next?
         if len(selected_videos) > 1:
@@ -413,7 +414,8 @@ def flow_search_and_play():
         for ep_data in selected_videos:
             vid = ep_data["videos"][vid_choice - 1]
             stream_url = resolve_stream_url(src, vid["url"])
-            video_list.append((stream_url, vid["quality"], ep_data["title"]))
+            needs_ytdlp = vid.get("source") != "direct_stream"
+            video_list.append((stream_url, vid["quality"], ep_data["title"], needs_ytdlp))
         
         play_multiple(video_list, title_prefix=anime_title)
     
@@ -449,22 +451,34 @@ def _auto_play_remaining(remaining_videos: list, vid_idx: int, anime_title: str,
         try:
             vid = ep_data["videos"][vid_idx]
             stream_url = resolve_stream_url(src, vid["url"])
-            video_list.append((stream_url, vid["quality"], ep_data["title"]))
+            needs_ytdlp = vid.get("source") != "direct_stream"
+            video_list.append((stream_url, vid["quality"], ep_data["title"], needs_ytdlp))
         except (IndexError, Exception):
             # Fallback ke video pertama jika index tidak valid
             if ep_data["videos"]:
                 vid = ep_data["videos"][0]
                 stream_url = resolve_stream_url(src, vid["url"])
-                video_list.append((stream_url, vid["quality"], ep_data["title"]))
+                needs_ytdlp = vid.get("source") != "direct_stream"
+                video_list.append((stream_url, vid["quality"], ep_data["title"], needs_ytdlp))
     
     if video_list:
         play_multiple(video_list, title_prefix=anime_title)
 
 
-def flow_quick_play(anime_query: str, episode_num: int | None = None):
+def flow_quick_play(anime_query: str, episode_num: int | None = None, source_filter: str = "all"):
     """Quick play dari CLI — search all sources, play first result."""
     with console.status(f"[bold green]🔎 Mencari: {anime_query}...[/bold green]"):
-        results = search_all(anime_query)
+        if source_filter == "all":
+            results = search_all(anime_query)
+        else:
+            from .scrapers import SOURCES
+            if source_filter in SOURCES:
+                module = SOURCES[source_filter]["module"]
+                results = module.search_anime(anime_query)
+                for r in results:
+                    r["source"] = source_filter
+            else:
+                results = search_all(anime_query)
 
     if not results:
         console.print(f"[red]❌ Tidak ditemukan: '{anime_query}'[/red]")
@@ -501,11 +515,16 @@ def flow_quick_play(anime_query: str, episode_num: int | None = None):
         console.print("[red]❌ Tidak ada link video.[/red]")
         return
 
-    vid = videos[0]
+    best_idx = _pick_best_video(videos)
+    vid = videos[best_idx]
+    
     stream_url = resolve_stream_url(src, vid["url"])
     full_title = f"{anime_title} - {ep_title}"
     
-    play_video(stream_url, quality=vid["quality"], title=full_title)
+    # Matikan yt-dlp jika sudah direct stream (MP4 langsung) agar tidak error 403
+    needs_ytdlp = vid.get("source") != "direct_stream"
+    
+    play_video(stream_url, quality=vid["quality"], title=full_title, use_ytdlp=needs_ytdlp)
 
 
 def flow_download_only(anime_query: str, episode_num: int, quality: str = "720p"):

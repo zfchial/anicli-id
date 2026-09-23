@@ -96,7 +96,7 @@ def main():
             flow_download_only(args.query, args.episode, args.quality)
         else:
             # Quick play
-            flow_quick_play(args.query, args.episode)
+            flow_quick_play(args.query, args.episode, args.source)
     else:
         # Interactive mode
         flow_search_and_play()
