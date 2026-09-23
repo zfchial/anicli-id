@@ -1,4 +1,3 @@
-# anicli-id
 
 **Nonton anime subtitle Indonesia langsung dari terminal!**
 
@@ -8,7 +7,6 @@ CLI tool untuk streaming & download anime Sub Indo dari **Otakudesu** dan **Same
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 ![Version](https://img.shields.io/badge/Version-0.3.0-orange.svg)
 
-## Fitur
 
 - Multi-source: Otakudesu + Samehadaku
 - Stream langsung via mpv (direct MP4, tanpa yt-dlp pun jalan)
@@ -17,47 +15,33 @@ CLI tool untuk streaming & download anime Sub Indo dari **Otakudesu** dan **Same
 - Quick mode — langsung play dari command line
 - Tampilan CLI dengan Rich
 
-## Instalasi
 
-### Linux
 
 ```bash
-# Install mpv
 sudo apt install mpv          # Debian/Ubuntu
 sudo pacman -S mpv            # Arch
 sudo dnf install mpv          # Fedora
 
-# (Opsional tapi recommended)
 pip install yt-dlp
 
-# Clone & install
 git clone https://github.com/zfchial/anicli-id.git
 cd anicli-id
 pip install -e .
 ```
 
-### Windows
 
 ```powershell
-# 1. Install Python 3.9+ dari python.org (centang "Add to PATH")
 
-# 2. Install mpv (pilih salah satu):
-#    - Download dari https://mpv.io/installation/ lalu tambah ke PATH
-#    - Atau via Chocolatey:
 choco install mpv
-#    - Atau via Scoop:
 scoop install mpv
 
-# 3. (Opsional) Install yt-dlp
 pip install yt-dlp
 
-# 4. Clone & install
 git clone https://github.com/zfchial/anicli-id.git
 cd anicli-id
 pip install -e .
 ```
 
-### macOS
 
 ```bash
 brew install mpv
@@ -68,9 +52,7 @@ cd anicli-id
 pip install -e .
 ```
 
-## Cara Pakai
 
-### Mode Interaktif
 
 ```bash
 anicli-id
@@ -78,7 +60,6 @@ anicli-id
 
 Flow: Pilih source → Search → Pilih anime → Pilih episode → Play/Download
 
-### Quick Mode
 
 ```bash
 anicli-id "frieren"                  # Play episode terbaru
@@ -87,7 +68,6 @@ anicli-id "frieren" -d -e 10         # Download episode 10
 anicli-id "frieren" -d -e 5 -q 480p  # Download 480p
 ```
 
-### Opsi CLI
 
 | Flag | Fungsi |
 |------|--------|
@@ -98,7 +78,6 @@ anicli-id "frieren" -d -e 5 -q 480p  # Download 480p
 | `-m`, `--marathon` | Marathon mode (auto-play) |
 | `-v`, `--version` | Tampilkan versi |
 
-## Dependencies
 
 | Package | Versi | Fungsi |
 |---------|-------|--------|
@@ -108,7 +87,6 @@ anicli-id "frieren" -d -e 5 -q 480p  # Download 480p
 | `mpv` | - | Video player (external) |
 | `yt-dlp` | - | Opsional, fallback downloader |
 
-## Struktur
 
 ```
 anicli-id/
@@ -126,10 +104,8 @@ anicli-id/
 └── README.md
 ```
 
-## Disclaimer
 
 Tool ini hanya untuk penggunaan pribadi. Dukung official release anime dengan menonton dari platform resmi!
 
-## License
 
 MIT License

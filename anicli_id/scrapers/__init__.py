@@ -23,14 +23,12 @@ SOURCES = {
 }
 
 def get_source(name: str):
-    """Get a source module by name."""
     source = SOURCES.get(name)
     if source:
         return source["module"]
     return None
 
 def list_sources() -> list[dict]:
-    """List all available sources with info."""
     return [
         {"id": k, "name": v["name"], "url": v["url"], "description": v["description"]}
         for k, v in SOURCES.items()

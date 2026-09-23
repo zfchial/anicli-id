@@ -18,12 +18,11 @@ from .player import play_video, play_multiple, download_video, check_mpv_install
 
 console = Console()
 
-# Banner
 BANNER = """
 [bold magenta]
     ╔═════════════════════════════════════════╗
     ║                                       ║
-    ║     🎌  ANICLI-ID  v0.3.0  🎌        ║
+    ║       ANICLI-ID  v0.3.0          ║
     ║     Nonton Anime Sub Indo             ║
     ║     Langsung dari Terminal            ║
     ║                                       ║
@@ -47,9 +46,8 @@ def print_banner():
 
 def print_system_info():
     tools = list_available_players()
-    icons = {True: "[green]✓[/green]", False: "[red]✗[/red]"}
+    icons = {True: "[green][/green]", False: "[red]✗[/red]"}
     
-    # List available sources
     sources = list_sources()
     sources_str = "  ".join(
         f"[{SOURCE_COLORS.get(s['id'], 'cyan')}]{s['name']}[/{SOURCE_COLORS.get(s['id'], 'cyan')}]"
@@ -68,14 +66,13 @@ def print_system_info():
 
 
 def print_search_results(results: list[dict]):
-    """Tampilkan hasil pencarian dari semua source."""
     if not results:
-        console.print("\n[yellow]⚠️  Tidak ditemukan hasil pencarian.[/yellow]")
+        console.print("\n[yellow]  Tidak ditemukan hasil pencarian.[/yellow]")
         console.print("[dim]Coba gunakan kata kunci lain atau cek ejaan.[/dim]\n")
         return
 
     table = Table(
-        title=f"🔍 Hasil Pencarian ({len(results)} anime dari semua sumber)",
+        title=f" Hasil Pencarian ({len(results)} anime dari semua sumber)",
         title_style="bold cyan",
         show_header=True,
         header_style="bold magenta",
@@ -108,16 +105,15 @@ def print_search_results(results: list[dict]):
 
 
 def print_episode_list(episodes: list[dict], anime_title: str = ""):
-    """Tampilkan daftar episode."""
     if not episodes:
-        console.print("\n[yellow]⚠️  Tidak ada episode ditemukan.[/yellow]\n")
+        console.print("\n[yellow]  Tidak ada episode ditemukan.[/yellow]\n")
         return
 
     ep_numbers = [ep["episode_num"] for ep in episodes]
     total = len(episodes)
     
     table = Table(
-        title=f"📺 Daftar Episode — {anime_title[:40]} ({total} eps)",
+        title=f" Daftar Episode — {anime_title[:40]} ({total} eps)",
         title_style="bold green",
         show_header=True,
         header_style="bold green",
@@ -133,7 +129,7 @@ def print_episode_list(episodes: list[dict], anime_title: str = ""):
         
         ep_str = f"Episode {ep['episode_num']}"
         if ep == episodes[-1]:
-            ep_str += " [bold green]✨[/]"
+            ep_str += " [bold green][/]"
         
         table.add_row(str(i), ep_str, title[:60])
 
@@ -142,13 +138,12 @@ def print_episode_list(episodes: list[dict], anime_title: str = ""):
 
 
 def print_video_options(videos: list[dict]):
-    """Tampilkan pilihan video (stream & download)."""
     if not videos:
-        console.print("\n[red]❌ Tidak ada link video tersedia.[/red]\n")
+        console.print("\n[red] Tidak ada link video tersedia.[/red]\n")
         return
 
     table = Table(
-        title=f"🎬 Pilih Sumber Video ({len(videos)} pilihan)",
+        title=f" Pilih Sumber Video ({len(videos)} pilihan)",
         title_style="bold yellow",
         show_header=True,
         header_style="bold yellow",
@@ -163,7 +158,7 @@ def print_video_options(videos: list[dict]):
         mirror = vid.get("mirror_name", vid.get("source", "unknown"))
         
         if "STREAM" in quality.upper():
-            quality = f"[bold green]▶ {quality}[/bold green]"
+            quality = f"[bold green] {quality}[/bold green]"
             mirror = f"[bold green]{mirror}[/bold green]"
         elif "360" in quality:
             quality = f"[dim]{quality}[/dim]"
@@ -175,13 +170,11 @@ def print_video_options(videos: list[dict]):
     console.print(table)
 
 
-# ========== SOURCE SELECTION ==========
 
 def select_source() -> str | None:
-    """Tanya user mau pake source apa."""
     sources = list_sources()
     
-    console.print("\n[bold]📡 Pilih Sumber Streaming[/bold]\n")
+    console.print("\n[bold] Pilih Sumber Streaming[/bold]\n")
     
     for i, s in enumerate(sources, 1):
         color = SOURCE_COLORS.get(s["id"], "cyan")
@@ -233,7 +226,6 @@ def _pick_best_video(videos: list[dict]) -> int:
     return 0
 
 
-# ========== MAIN FLOW ==========
 
 def flow_search_and_play():
     """
@@ -243,27 +235,24 @@ def flow_search_and_play():
     print_banner()
     print_system_info()
 
-    # Cek mpv
     if not check_mpv_installed():
-        console.print("\n[bold red]⚠  mpv tidak terinstall![/bold red]")
+        console.print("\n[bold red]  mpv tidak terinstall![/bold red]")
         console.print("[dim]Install: [cyan]sudo apt install mpv[/cyan][/dim]\n")
         if not Confirm.ask("Lanjutkan tanpa mpv?"):
             return
 
-    # ===== STEP 1: Pilih Source =====
     source_id = select_source()
     if not source_id:
         return
     
-    # ===== STEP 2: Search =====
-    console.print("\n[bold]🔍 Cari anime[/bold]")
+    console.print("\n[bold] Cari anime[/bold]")
     query = Prompt.ask("   Masukkan judul").strip()
     
     if not query:
         console.print("[yellow]Query kosong.[/yellow]")
         return
 
-    with console.status("[bold green]🔎 Mencari di semua sumber...[/bold green]"):
+    with console.status("[bold green] Mencari di semua sumber...[/bold green]"):
         if source_id == "all":
             results = search_all(query)
         else:
@@ -277,7 +266,6 @@ def flow_search_and_play():
     if not results:
         return
 
-    # ===== STEP 3: Pilih Anime =====
     console.print()
     choice = IntPrompt.ask(
         "Pilih nomor anime",
@@ -289,19 +277,17 @@ def flow_search_and_play():
     src = selected.get("source", "otakudesu")
     anime_title = re.sub(r'\s*Subtitle\s*Indonesia', '', selected['title'], flags=re.IGNORECASE).strip()
     
-    console.print(f"\n[bold green]✓[/bold green] [bold cyan]{anime_title}[/bold cyan]")
+    console.print(f"\n[bold green][/bold green] [bold cyan]{anime_title}[/bold cyan]")
     console.print(f"   [dim]Source: {src.upper()} | Status: {selected.get('status', '-')}[/dim]")
 
-    # ===== STEP 4: Ambil Episode =====
-    with console.status(f"[bold green]📥 Mengambil episode...[/bold green]"):
+    with console.status(f"[bold green] Mengambil episode...[/bold green]"):
         episodes = get_episode_list(src, selected["url"])
 
     print_episode_list(episodes, anime_title)
     if not episodes:
         return
 
-    # ===== STEP 5: Pilih Mode & Episode =====
-    console.print("\n[bold]🎯 Pilih Mode[/bold]")
+    console.print("\n[bold] Pilih Mode[/bold]")
     console.print("  [cyan]1[/cyan]. Nonton 1 episode")
     console.print("  [yellow]M[/yellow]. Marathon / Auto-play (nonton berurutan)")
     console.print()
@@ -312,7 +298,6 @@ def flow_search_and_play():
     start_ep = episodes[-1]["episode_num"]  # Default: episode terbaru
     
     if mode == "1":
-        # Single episode
         console.print(f"\n[dim]Tersedia: Ep {ep_numbers[0]} – {ep_numbers[-1]}[/dim]")
         ep_choice = IntPrompt.ask("Nomor episode", default=start_ep)
         
@@ -325,30 +310,28 @@ def flow_search_and_play():
             selected_eps.append(episodes[ep_choice - 1])
         
         if not selected_eps:
-            console.print(f"[red]❌ Episode {ep_choice} tidak ditemukan.[/red]")
+            console.print(f"[red] Episode {ep_choice} tidak ditemukan.[/red]")
             return
     
     else:
-        # Marathon / Auto-play
         console.print(f"\n[dim]Tersedia: Ep {ep_numbers[0]} – {ep_numbers[-1]}[/dim]")
         start = IntPrompt.ask("Mulai dari episode", default=start_ep)
         end = IntPrompt.ask("Sampai episode", default=ep_numbers[-1])
         
         selected_eps = [ep for ep in episodes if start <= ep["episode_num"] <= end]
         if not selected_eps:
-            console.print("[red]❌ Tidak ada episode dalam range tersebut.[/red]")
+            console.print("[red] Tidak ada episode dalam range tersebut.[/red]")
             return
         
-        console.print(f"[green]✓ Akan memutar {len(selected_eps)} episode (Ep {start} – {end})[/green]")
+        console.print(f"[green] Akan memutar {len(selected_eps)} episode (Ep {start} – {end})[/green]")
 
-    # ===== STEP 6: Ambil Video URL (untuk episode pertama) =====
     selected_videos = []
     stream_urls = []
     
     for ep in selected_eps:
         ep_title_clean = re.sub(r'\s*Subtitle\s*Indonesia', '', ep['title'], flags=re.IGNORECASE).strip()
         
-        with console.status(f"[bold green]🔗 Mengambil link: Ep {ep['episode_num']}...[/bold green]"):
+        with console.status(f"[bold green] Mengambil link: Ep {ep['episode_num']}...[/bold green]"):
             videos = get_video_urls(src, ep["url"])
         
         if videos:
@@ -359,14 +342,12 @@ def flow_search_and_play():
             })
     
     if not selected_videos:
-        console.print("[red]❌ Gagal mendapatkan link video.[/red]")
+        console.print("[red] Gagal mendapatkan link video.[/red]")
         return
 
-    # Tampilkan pilihan video untuk episode pertama
     first_videos = selected_videos[0]["videos"]
     print_video_options(first_videos)
     
-    # ===== STEP 7: Pilih Kualitas (untuk semua episode) =====
     console.print()
     default_video_idx = _pick_best_video(first_videos)
     vid_choice = IntPrompt.ask(
@@ -375,7 +356,6 @@ def flow_search_and_play():
         choices=[str(i) for i in range(1, len(first_videos) + 1)],
     )
     
-    # ===== STEP 8: Play atau Download =====
     console.print()
     actions = ["play"]
     if mode == "m":
@@ -391,7 +371,6 @@ def flow_search_and_play():
     title_full = re.sub(r'\s*Subtitle\s*Indonesia', '', title_full, flags=re.IGNORECASE).strip()
     
     if action == "play":
-        # Play satu episode
         first = selected_videos[0]
         vid = first["videos"][vid_choice - 1]
         stream_url = resolve_stream_url(src, vid["url"])
@@ -402,14 +381,12 @@ def flow_search_and_play():
         
         play_video(stream_url, quality=vid["quality"], title=play_title, use_ytdlp=needs_ytdlp)
         
-        # Tanya mau auto-play next?
         if len(selected_videos) > 1:
             console.print()
             if Confirm.ask("Lanjut ke episode berikutnya?", default=False):
                 _auto_play_remaining(selected_videos[1:], vid_choice - 1, anime_title, src)
     
     elif action == "play-all":
-        # Auto-play semua episode
         video_list = []
         for ep_data in selected_videos:
             vid = ep_data["videos"][vid_choice - 1]
@@ -436,16 +413,15 @@ def flow_search_and_play():
         try:
             import pyperclip
             pyperclip.copy(url)
-            console.print("[green]✓ URL disalin![/green]")
+            console.print("[green] URL disalin![/green]")
         except ImportError:
             pass
     
     else:
-        console.print("[dim]Dibatalkan. 🎌[/dim]")
+        console.print("[dim]Dibatalkan. [/dim]")
 
 
 def _auto_play_remaining(remaining_videos: list, vid_idx: int, anime_title: str, src: str):
-    """Auto-play sisa episode setelah episode pertama selesai."""
     video_list = []
     for ep_data in remaining_videos:
         try:
@@ -454,7 +430,6 @@ def _auto_play_remaining(remaining_videos: list, vid_idx: int, anime_title: str,
             needs_ytdlp = vid.get("source") != "direct_stream"
             video_list.append((stream_url, vid["quality"], ep_data["title"], needs_ytdlp))
         except (IndexError, Exception):
-            # Fallback ke video pertama jika index tidak valid
             if ep_data["videos"]:
                 vid = ep_data["videos"][0]
                 stream_url = resolve_stream_url(src, vid["url"])
@@ -466,8 +441,7 @@ def _auto_play_remaining(remaining_videos: list, vid_idx: int, anime_title: str,
 
 
 def flow_quick_play(anime_query: str, episode_num: int | None = None, source_filter: str = "all"):
-    """Quick play dari CLI — search all sources, play first result."""
-    with console.status(f"[bold green]🔎 Mencari: {anime_query}...[/bold green]"):
+    with console.status(f"[bold green] Mencari: {anime_query}...[/bold green]"):
         if source_filter == "all":
             results = search_all(anime_query)
         else:
@@ -481,19 +455,19 @@ def flow_quick_play(anime_query: str, episode_num: int | None = None, source_fil
                 results = search_all(anime_query)
 
     if not results:
-        console.print(f"[red]❌ Tidak ditemukan: '{anime_query}'[/red]")
+        console.print(f"[red] Tidak ditemukan: '{anime_query}'[/red]")
         return
 
     selected = results[0]
     src = selected.get("source", "otakudesu")
     anime_title = re.sub(r'\s*Subtitle\s*Indonesia', '', selected['title'], flags=re.IGNORECASE).strip()
-    console.print(f"[green]✓[/green] [cyan]{anime_title}[/cyan] [dim]({src.upper()})[/dim]")
+    console.print(f"[green][/green] [cyan]{anime_title}[/cyan] [dim]({src.upper()})[/dim]")
 
-    with console.status("[bold green]📥 Mengambil episode...[/bold green]"):
+    with console.status("[bold green] Mengambil episode...[/bold green]"):
         episodes = get_episode_list(src, selected["url"])
 
     if not episodes:
-        console.print("[red]❌ Tidak ada episode.[/red]")
+        console.print("[red] Tidak ada episode.[/red]")
         return
 
     if episode_num is None:
@@ -501,18 +475,18 @@ def flow_quick_play(anime_query: str, episode_num: int | None = None, source_fil
     else:
         ep = next((e for e in episodes if e["episode_num"] == episode_num), None)
         if not ep:
-            console.print(f"[red]❌ Episode {episode_num} tidak ditemukan.[/red]")
+            console.print(f"[red] Episode {episode_num} tidak ditemukan.[/red]")
             console.print(f"[dim]Tersedia: Ep {episodes[0]['episode_num']} - {episodes[-1]['episode_num']}[/dim]")
             return
 
     ep_title = re.sub(r'\s*Subtitle\s*Indonesia', '', ep['title'], flags=re.IGNORECASE).strip()
-    console.print(f"[green]✓[/green] {ep_title}")
+    console.print(f"[green][/green] {ep_title}")
 
-    with console.status("[bold green]🔗 Mengambil link video...[/bold green]"):
+    with console.status("[bold green] Mengambil link video...[/bold green]"):
         videos = get_video_urls(src, ep["url"])
 
     if not videos:
-        console.print("[red]❌ Tidak ada link video.[/red]")
+        console.print("[red] Tidak ada link video.[/red]")
         return
 
     best_idx = _pick_best_video(videos)
@@ -521,47 +495,45 @@ def flow_quick_play(anime_query: str, episode_num: int | None = None, source_fil
     stream_url = resolve_stream_url(src, vid["url"])
     full_title = f"{anime_title} - {ep_title}"
     
-    # Matikan yt-dlp jika sudah direct stream (MP4 langsung) agar tidak error 403
     needs_ytdlp = vid.get("source") != "direct_stream"
     
     play_video(stream_url, quality=vid["quality"], title=full_title, use_ytdlp=needs_ytdlp)
 
 
 def flow_download_only(anime_query: str, episode_num: int, quality: str = "720p"):
-    """Download mode dari CLI — search all sources, download episode tertentu."""
-    with console.status(f"[bold green]🔎 Mencari: {anime_query}...[/bold green]"):
+    with console.status(f"[bold green] Mencari: {anime_query}...[/bold green]"):
         results = search_all(anime_query)
 
     if not results:
-        console.print(f"[red]❌ Tidak ditemukan: '{anime_query}'[/red]")
+        console.print(f"[red] Tidak ditemukan: '{anime_query}'[/red]")
         return
 
     selected = results[0]
     src = selected.get("source", "otakudesu")
     anime_title = re.sub(r'\s*Subtitle\s*Indonesia', '', selected['title'], flags=re.IGNORECASE).strip()
-    console.print(f"[green]✓[/green] [cyan]{anime_title}[/cyan] [dim]({src.upper()})[/dim]")
+    console.print(f"[green][/green] [cyan]{anime_title}[/cyan] [dim]({src.upper()})[/dim]")
 
-    with console.status("[bold green]📥 Mengambil episode...[/bold green]"):
+    with console.status("[bold green] Mengambil episode...[/bold green]"):
         episodes = get_episode_list(src, selected["url"])
 
     if not episodes:
-        console.print("[red]❌ Tidak ada episode.[/red]")
+        console.print("[red] Tidak ada episode.[/red]")
         return
 
     ep = next((e for e in episodes if e["episode_num"] == episode_num), None)
     if not ep:
-        console.print(f"[red]❌ Episode {episode_num} tidak ditemukan.[/red]")
+        console.print(f"[red] Episode {episode_num} tidak ditemukan.[/red]")
         console.print(f"[dim]Tersedia: Ep {episodes[0]['episode_num']} - {episodes[-1]['episode_num']}[/dim]")
         return
 
     ep_title = re.sub(r'\s*Subtitle\s*Indonesia', '', ep['title'], flags=re.IGNORECASE).strip()
-    console.print(f"[green]✓[/green] {ep_title}")
+    console.print(f"[green][/green] {ep_title}")
 
-    with console.status("[bold green]🔗 Mengambil link video...[/bold green]"):
+    with console.status("[bold green] Mengambil link video...[/bold green]"):
         videos = get_video_urls(src, ep["url"])
 
     if not videos:
-        console.print("[red]❌ Tidak ada link video.[/red]")
+        console.print("[red] Tidak ada link video.[/red]")
         return
 
     vid = None
@@ -585,5 +557,4 @@ def flow_download_only(anime_query: str, episode_num: int, quality: str = "720p"
 
 
 def main():
-    """Entry point dipanggil dari pyproject.toml -> anicli_id.cli:main"""
     flow_search_and_play()

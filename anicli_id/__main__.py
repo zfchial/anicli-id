@@ -11,7 +11,6 @@ from .scrapers import list_sources
 
 
 def main():
-    """Entry point utama CLI."""
     sources_info = "\n".join(
         f"  {s['id']:12s} — {s['name']:12s} {s['description']}"
         for s in list_sources()
@@ -20,7 +19,7 @@ def main():
     parser = argparse.ArgumentParser(
         prog="anicli-id",
         description=(
-            "🎌 Nonton anime subtitle Indonesia langsung dari terminal\n"
+            " Nonton anime subtitle Indonesia langsung dari terminal\n"
             "Multi-source: Otakudesu + Samehadaku\n"
             "Auto-play: marathon mode!"
         ),
@@ -81,24 +80,21 @@ def main():
     parser.add_argument(
         "-v", "--version",
         action="version",
-        version="%(prog)s v0.3.0 — 🎌 Anime Sub Indo Multi-Source",
+        version="%(prog)s v0.3.0 —  Anime Sub Indo Multi-Source",
     )
 
     args = parser.parse_args()
 
     if args.query:
         if args.download:
-            # Download mode
             if not args.episode:
-                console.print("[red]❌ Download mode perlu nomor episode (-e / --episode)[/red]")
+                console.print("[red] Download mode perlu nomor episode (-e / --episode)[/red]")
                 console.print("[dim]Contoh: anicli-id \"frieren\" -d -e 10[/dim]\n")
                 sys.exit(1)
             flow_download_only(args.query, args.episode, args.quality)
         else:
-            # Quick play
             flow_quick_play(args.query, args.episode, args.source)
     else:
-        # Interactive mode
         flow_search_and_play()
 
 

@@ -29,18 +29,15 @@ def search_all(query: str, limit: int = 20) -> list[dict]:
                 all_results.extend(results)
             except Exception as e:
                 source_id = futures[future]
-                # Silently skip failed source — user doesn't need to see this
     
     return all_results
 
 
 def _search_source(source_id: str, source_info: dict, query: str, limit: int) -> list[dict]:
-    """Search in a single source (helper for threading)."""
     try:
         module = source_info["module"]
         results = module.search_anime(query, limit)
         
-        # Pastikan setiap result punya field 'source'
         for r in results:
             if "source" not in r or not r["source"]:
                 r["source"] = source_id
@@ -51,14 +48,12 @@ def _search_source(source_id: str, source_info: dict, query: str, limit: int) ->
 
 
 def get_episode_list(source_id: str, anime_url: str) -> list[dict]:
-    """Get episode list from a specific source."""
     module = _get_module(source_id)
     if not module:
         return []
     
     try:
         episodes = module.get_episode_list(anime_url)
-        # Filter: hanya episode yang punya nomor
         episodes = [ep for ep in episodes if ep["episode_num"] > 0]
         return sorted(episodes, key=lambda x: x["episode_num"])
     except Exception as e:
@@ -67,7 +62,6 @@ def get_episode_list(source_id: str, anime_url: str) -> list[dict]:
 
 
 def get_video_urls(source_id: str, episode_url: str) -> list[dict]:
-    """Get video URLs from a specific source."""
     module = _get_module(source_id)
     if not module:
         return []
@@ -80,7 +74,6 @@ def get_video_urls(source_id: str, episode_url: str) -> list[dict]:
 
 
 def resolve_stream_url(source_id: str, embed_url: str) -> str | None:
-    """Resolve stream URL from a specific source."""
     module = _get_module(source_id)
     if not module:
         return embed_url
@@ -94,12 +87,10 @@ def resolve_stream_url(source_id: str, embed_url: str) -> str | None:
 
 
 def _get_module(source_id: str):
-    """Get scraper module by source ID."""
     source = SOURCES.get(source_id)
     if source:
         return source["module"]
     
-    # Fallback: coba cari berdasarkan nama
     for sid, sinfo in SOURCES.items():
         if source_id in sid or sid in source_id:
             return sinfo["module"]
@@ -107,5 +98,4 @@ def _get_module(source_id: str):
     return None
 
 
-# Shortcut: untuk backward compatibility
 search_anime = search_all

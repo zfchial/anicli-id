@@ -45,7 +45,6 @@ def search_anime(query: str, limit: int = 12) -> list[dict]:
     results = []
     seen_urls = set()
 
-    # Samehadaku search results: <article> > a[itemprop="url"]
     for article in soup.find_all("article"):
         a_tag = article.select_one('a[itemprop="url"]')
         if not a_tag:
@@ -63,14 +62,12 @@ def search_anime(query: str, limit: int = 12) -> list[dict]:
 
         seen_urls.add(href)
 
-        # Ekstrak info dari elemen artikel
         status_el = article.select_one(".status")
         status = status_el.get_text(strip=True) if status_el else ""
 
         type_el = article.select_one(".typez")
         anime_type = type_el.get_text(strip=True) if type_el else ""
 
-        # Cek rating dari text artikel (rating biasanya di luar article)
         rating = ""
 
         results.append({
@@ -102,7 +99,6 @@ def get_episode_list(anime_url: str) -> list[dict]:
     episodes = []
     seen_eps = set()
 
-    # Samehadaku episode links di halaman anime detail
     for a_tag in soup.find_all("a", href=True):
         href = a_tag.get("href", "")
         title = a_tag.get_text(strip=True)
@@ -114,7 +110,6 @@ def get_episode_list(anime_url: str) -> list[dict]:
         if href == "#" or "javascript" in href:
             continue
 
-        # Ekstrak nomor episode
         ep_match = re.search(r'(?:episode|ep)\s*(\d+)', title, re.IGNORECASE)
         if not ep_match:
             ep_match = re.search(r'(?:episode|ep)\s*(\d+)', href, re.IGNORECASE)
@@ -125,7 +120,6 @@ def get_episode_list(anime_url: str) -> list[dict]:
 
         seen_eps.add(ep_num)
 
-        # Pastikan URL absolut
         if not href.startswith("http"):
             href = BASE_URL + href if href.startswith("/") else f"{BASE_URL}/{href}"
 
@@ -158,7 +152,6 @@ def get_video_urls(episode_url: str) -> list[dict]:
     videos = []
     seen_urls = set()
 
-    # === Method 1: Cari link download/stream di HTML ===
     for a_tag in soup.find_all("a", href=True):
         href = a_tag.get("href", "")
         text = a_tag.get_text(strip=True)
@@ -166,7 +159,6 @@ def get_video_urls(episode_url: str) -> list[dict]:
         if not href or href in seen_urls:
             continue
 
-        # Filter: cari domain streaming/download
         if any(domain in href.lower() for domain in [
             "desustream", "kwik", "mega", "gofile", "acefile",
             "odfiles", "pdrain", "mediafire", "zippyshare",
@@ -192,7 +184,6 @@ def get_video_urls(episode_url: str) -> list[dict]:
             })
             seen_urls.add(href)
 
-    # === Method 2: Cari URL video di JavaScript ===
     for script in soup.find_all("script"):
         if script.string:
             for pattern in [
@@ -218,7 +209,6 @@ def get_video_urls(episode_url: str) -> list[dict]:
                             })
                             seen_urls.add(match)
 
-    # === Method 3: Cari player container dengan URL ===
     for sel in ["div.player-embed", "div#pembed", "div.video-embed"]:
         container = soup.select_one(sel)
         if container:
@@ -234,8 +224,6 @@ def get_video_urls(episode_url: str) -> list[dict]:
                     })
                     seen_urls.add(src)
 
-    # === Method 4: Return URL episode sebagai fallback ===
-    # yt-dlp bisa handle Cloudflare/JS-protected pages
     if not videos:
         videos.append({
             "quality": "PAGE (yt-dlp)",
@@ -255,17 +243,14 @@ def resolve_stream_url(embed_url: str) -> str | None:
     if not embed_url:
         return None
     
-    # Jika URL episode Samehadaku, return as-is (yt-dlp handle JS)
     if "samehadaku" in embed_url.lower() and "episode" in embed_url.lower():
         return embed_url
     
-    # Untuk embed eksternal, coba resolve
     try:
         session = requests.Session()
         session.headers.update(HEADERS)
         resp = session.get(embed_url, timeout=15, allow_redirects=True)
         
-        # Jika redirect ke file video
         if any(ext in resp.url.lower() for ext in [".mp4", ".m3u8"]):
             return resp.url
         

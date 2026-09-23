@@ -31,7 +31,6 @@ HEADERS = {
     "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
 }
 
-# Domain yang dianggap sebagai mirror/download yang valid
 VALID_MIRROR_DOMAINS = [
     "desustream.com", "kwik.cx", "kwik.si",
     "mega.nz", "megadrive", "mediafire.com", "gofile.io",
@@ -39,7 +38,6 @@ VALID_MIRROR_DOMAINS = [
     "zippyshare", "drive.google.com", "cloud",
 ]
 
-# Domain/pattern yang harus DIHAPUS (noise)
 NOISE_PATTERNS = [
     "facebook.com", "twitter.com", "otakudesu.blog/genre",
     "otakudesu.blog/episode", "sharer.php", "/wp-content/",
@@ -47,20 +45,16 @@ NOISE_PATTERNS = [
 
 
 def _is_valid_video_url(url: str) -> bool:
-    """Cek apakah URL adalah link video/mirror yang valid."""
     url_lower = url.lower()
     
-    # Skip noise patterns
     for pattern in NOISE_PATTERNS:
         if pattern in url_lower:
             return False
     
-    # Cek apakah mengandung domain mirror yang valid
     for domain in VALID_MIRROR_DOMAINS:
         if domain in url_lower:
             return True
     
-    # Jika tidak match domain manapun, cek pola umum streaming
     if any(p in url_lower for p in ["stream", "dstream", "player", "embed"]):
         return True
     
@@ -98,11 +92,9 @@ def search_anime(query: str, limit: int = 12) -> list[dict]:
             href = h2_tag.get("href", "")
             title = h2_tag.get_text(strip=True)
 
-            # SKIP episode links — hanya ambil anime detail pages
             if "/episode/" in href.lower():
                 continue
 
-            # Parse metadata dari div.set
             set_divs = item.select("div.set")
             genres = ""
             status = ""
@@ -121,7 +113,6 @@ def search_anime(query: str, limit: int = 12) -> list[dict]:
                 elif "Rating" in label:
                     rating = text.replace(label, "").replace(":", "").strip()
 
-            # Thumbnail image
             img_tag = item.select_one("img")
             image = img_tag.get("src", "") if img_tag else ""
 
@@ -179,7 +170,6 @@ AJAX_URL = f"{BASE_URL}/wp-admin/admin-ajax.php"
 
 
 def _fetch_nonce_and_actions(soup):
-    """Extract nonce action dan mirror action dari JS di halaman episode."""
     nonce_action = None
     mirror_action = None
     for script in soup.find_all("script"):
@@ -196,7 +186,6 @@ def _fetch_nonce_and_actions(soup):
 
 
 def _get_nonce(session, nonce_action):
-    """Fetch nonce via AJAX."""
     if not nonce_action:
         return None
     try:
@@ -210,7 +199,6 @@ def _get_nonce(session, nonce_action):
 
 
 def _resolve_mirror_ajax(session, mirror_action, nonce, mirror_data):
-    """Resolve mirror via AJAX → dapet iframe HTML (base64)."""
     if not mirror_action or not nonce:
         return None
     try:
@@ -232,7 +220,6 @@ def _resolve_mirror_ajax(session, mirror_action, nonce, mirror_data):
 
 
 def _resolve_desustream(embed_url):
-    """Resolve desustream embed → direct video URL (googlevideo/mp4)."""
     if not embed_url:
         return None
     try:
@@ -354,7 +341,6 @@ def get_video_urls(episode_url: str) -> list[dict]:
 
 
 def resolve_stream_url(embed_url: str) -> str | None:
-    """Resolve embed/direct URL. Jika sudah direct (googlevideo/mp4), return as-is."""
     if not embed_url:
         return None
     if "googlevideo" in embed_url or ".mp4" in embed_url or ".m3u8" in embed_url:
@@ -379,14 +365,12 @@ def get_anime_info(anime_url: str) -> dict:
     soup = BeautifulSoup(resp.text, "html.parser")
     info = {}
     
-    # Judul
     for sel in ["h1", ".jdlz", ".title"]:
         tag = soup.select_one(sel)
         if tag:
             info["title"] = tag.get_text(strip=True)
             break
     
-    # Info container
     for sel in [".infoz", ".info"]:
         info_div = soup.select_one(sel)
         if info_div:
@@ -406,14 +390,12 @@ def get_anime_info(anime_url: str) -> dict:
                         info["total_episodes"] = value
             break
     
-    # Sinopsis
     for sel in [".sinopsis", ".desc", ".summary"]:
         sinop = soup.select_one(sel)
         if sinop:
             info["synopsis"] = sinop.get_text(strip=True)
             break
     
-    # Image
     for sel in [".fotoanime img", "div.thumb img", ".image img"]:
         img = soup.select_one(sel)
         if img:
