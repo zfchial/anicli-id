@@ -1,0 +1,570 @@
+"""
+CLI Interface untuk anicli-id v0.2.0
+Mendukung multi-source (Otakudesu, Anoboy) dan auto-play next episode!
+"""
+
+import sys
+import re
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich.prompt import Prompt, IntPrompt, Confirm
+from rich.columns import Columns
+from rich.text import Text
+
+from .sources import search_all, get_episode_list, get_video_urls, resolve_stream_url
+from .scrapers import list_sources
+from .player import play_video, play_multiple, download_video, check_mpv_installed, list_available_players
+
+console = Console()
+
+# Banner
+BANNER = """
+[bold magenta]
+    ╔═════════════════════════════════════════╗
+    ║                                       ║
+    ║     🎌  ANICLI-ID  v0.3.0  🎌        ║
+    ║     Nonton Anime Sub Indo             ║
+    ║     Langsung dari Terminal            ║
+    ║                                       ║
+    ║     Sources: Otakudesu,               ║
+    ║              Samehadaku               ║
+    ║                                       ║
+    ╚═════════════════════════════════════════╝
+[/bold magenta]
+"""
+
+SOURCE_COLORS = {
+    "otakudesu": "blue",
+    "anoboy": "green",
+    "samehadaku": "yellow",
+}
+
+
+def print_banner():
+    console.print(Panel(BANNER, border_style="magenta", padding=(1, 3)))
+
+
+def print_system_info():
+    tools = list_available_players()
+    icons = {True: "[green]✓[/green]", False: "[red]✗[/red]"}
+    
+    # List available sources
+    sources = list_sources()
+    sources_str = "  ".join(
+        f"[{SOURCE_COLORS.get(s['id'], 'cyan')}]{s['name']}[/{SOURCE_COLORS.get(s['id'], 'cyan')}]"
+        for s in sources
+    )
+    
+    info = (
+        f"[cyan]Sumber:[/cyan] {sources_str}\n"
+        f"[cyan]Tools:[/cyan] mpv {icons[tools['mpv']]}  "
+        f"yt-dlp {icons[tools['yt-dlp']]}  "
+        f"curl {icons[tools['curl']]}  "
+        f"wget {icons[tools['wget']]}"
+    )
+    
+    console.print(Panel(info, border_style="dim", padding=(0, 2)))
+
+
+def print_search_results(results: list[dict]):
+    """Tampilkan hasil pencarian dari semua source."""
+    if not results:
+        console.print("\n[yellow]⚠️  Tidak ditemukan hasil pencarian.[/yellow]")
+        console.print("[dim]Coba gunakan kata kunci lain atau cek ejaan.[/dim]\n")
+        return
+
+    table = Table(
+        title=f"🔍 Hasil Pencarian ({len(results)} anime dari semua sumber)",
+        title_style="bold cyan",
+        show_header=True,
+        header_style="bold magenta",
+        border_style="blue",
+        pad_edge=True,
+    )
+    table.add_column("#", style="dim", width=4, justify="center")
+    table.add_column("Judul Anime", style="bold cyan", min_width=40)
+    table.add_column("Source", justify="center", min_width=10)
+    table.add_column("Status", style="green", justify="center")
+    table.add_column("Rating", style="yellow", justify="center")
+
+    for i, anime in enumerate(results, 1):
+        title = anime["title"]
+        title = re.sub(r'\s*Subtitle\s*Indonesia', '', title, flags=re.IGNORECASE).strip()
+        
+        source_id = anime.get("source", "?")
+        color = SOURCE_COLORS.get(source_id, "cyan")
+        source_display = f"[{color}]{source_id.upper()}[/{color}]"
+        
+        table.add_row(
+            str(i),
+            title[:50] + ("..." if len(title) > 50 else ""),
+            source_display,
+            anime.get("status", "-"),
+            anime.get("rating", "-"),
+        )
+
+    console.print(table)
+
+
+def print_episode_list(episodes: list[dict], anime_title: str = ""):
+    """Tampilkan daftar episode."""
+    if not episodes:
+        console.print("\n[yellow]⚠️  Tidak ada episode ditemukan.[/yellow]\n")
+        return
+
+    ep_numbers = [ep["episode_num"] for ep in episodes]
+    total = len(episodes)
+    
+    table = Table(
+        title=f"📺 Daftar Episode — {anime_title[:40]} ({total} eps)",
+        title_style="bold green",
+        show_header=True,
+        header_style="bold green",
+        border_style="green",
+    )
+    table.add_column("#", style="dim", width=5, justify="center")
+    table.add_column("Episode", style="bold", justify="center")
+    table.add_column("Judul", style="cyan")
+
+    for i, ep in enumerate(episodes, 1):
+        title = ep["title"]
+        title = re.sub(r'\s*Subtitle\s*Indonesia', '', title, flags=re.IGNORECASE).strip()
+        
+        ep_str = f"Episode {ep['episode_num']}"
+        if ep == episodes[-1]:
+            ep_str += " [bold green]✨[/]"
+        
+        table.add_row(str(i), ep_str, title[:60])
+
+    console.print(table)
+    console.print(f"[dim]Ep {ep_numbers[0]} – {ep_numbers[-1]}  |  1-{len(episodes)} untuk pilih[/dim]")
+
+
+def print_video_options(videos: list[dict]):
+    """Tampilkan pilihan video (stream & download)."""
+    if not videos:
+        console.print("\n[red]❌ Tidak ada link video tersedia.[/red]\n")
+        return
+
+    table = Table(
+        title=f"🎬 Pilih Sumber Video ({len(videos)} pilihan)",
+        title_style="bold yellow",
+        show_header=True,
+        header_style="bold yellow",
+        border_style="yellow",
+    )
+    table.add_column("#", style="dim", width=4, justify="center")
+    table.add_column("Type / Kualitas", style="bold", min_width=22)
+    table.add_column("Mirror / Sumber", style="cyan", min_width=16)
+
+    for i, vid in enumerate(videos, 1):
+        quality = vid.get("quality", "unknown")
+        mirror = vid.get("mirror_name", vid.get("source", "unknown"))
+        
+        if "STREAM" in quality.upper():
+            quality = f"[bold green]▶ {quality}[/bold green]"
+            mirror = f"[bold green]{mirror}[/bold green]"
+        elif "360" in quality:
+            quality = f"[dim]{quality}[/dim]"
+        elif "1080" in quality:
+            quality = f"[bold]{quality}[/bold]"
+        
+        table.add_row(str(i), quality, mirror[:20])
+
+    console.print(table)
+
+
+# ========== SOURCE SELECTION ==========
+
+def select_source() -> str | None:
+    """Tanya user mau pake source apa."""
+    sources = list_sources()
+    
+    console.print("\n[bold]📡 Pilih Sumber Streaming[/bold]\n")
+    
+    for i, s in enumerate(sources, 1):
+        color = SOURCE_COLORS.get(s["id"], "cyan")
+        console.print(f"  [{color}]{i}[/{color}]. [bold {color}]{s['name']}[/bold {color}]")
+        console.print(f"     [dim]{s['description']}[/dim]")
+    
+    console.print(f"  [yellow]A[/yellow]. Search ALL (gabung hasil dari semua source)")
+    console.print()
+    
+    choice = Prompt.ask("Pilih", default="1")
+    
+    if choice.upper() == "A":
+        return "all"
+    
+    try:
+        idx = int(choice) - 1
+        if 0 <= idx < len(sources):
+            return sources[idx]["id"]
+    except ValueError:
+        pass
+    
+    return "all"
+
+
+def _pick_best_video(videos: list[dict]) -> int:
+    """
+    Pilih indeks video terbaik untuk streaming.
+    Prioritas: direct_stream 720p > direct_stream 480p > direct lainnya > embed
+    """
+    if not videos:
+        return 0
+
+    preferred = ["720p", "480p", "1080p", "360p"]
+
+    for q in preferred:
+        for i, v in enumerate(videos):
+            if q in v.get("quality", "").lower() and v.get("source") == "direct_stream":
+                return i
+
+    for i, v in enumerate(videos):
+        if v.get("source") == "direct_stream":
+            return i
+
+    for q in preferred:
+        for i, v in enumerate(videos):
+            if q in v.get("quality", "").lower():
+                return i
+
+    return 0
+
+
+# ========== MAIN FLOW ==========
+
+def flow_search_and_play():
+    """
+    Flow utama interaktif:
+    Pilih Source → Search → Pilih Anime → Pilih Episode(s) → Pilih Kualitas → Play/Download
+    """
+    print_banner()
+    print_system_info()
+
+    # Cek mpv
+    if not check_mpv_installed():
+        console.print("\n[bold red]⚠  mpv tidak terinstall![/bold red]")
+        console.print("[dim]Install: [cyan]sudo apt install mpv[/cyan][/dim]\n")
+        if not Confirm.ask("Lanjutkan tanpa mpv?"):
+            return
+
+    # ===== STEP 1: Pilih Source =====
+    source_id = select_source()
+    if not source_id:
+        return
+    
+    # ===== STEP 2: Search =====
+    console.print("\n[bold]🔍 Cari anime[/bold]")
+    query = Prompt.ask("   Masukkan judul").strip()
+    
+    if not query:
+        console.print("[yellow]Query kosong.[/yellow]")
+        return
+
+    with console.status("[bold green]🔎 Mencari di semua sumber...[/bold green]"):
+        if source_id == "all":
+            results = search_all(query)
+        else:
+            from .scrapers import SOURCES
+            module = SOURCES[source_id]["module"]
+            results = module.search_anime(query)
+            for r in results:
+                r["source"] = source_id
+
+    print_search_results(results)
+    if not results:
+        return
+
+    # ===== STEP 3: Pilih Anime =====
+    console.print()
+    choice = IntPrompt.ask(
+        "Pilih nomor anime",
+        default=1,
+        choices=[str(i) for i in range(1, len(results) + 1)],
+    )
+
+    selected = results[choice - 1]
+    src = selected.get("source", "otakudesu")
+    anime_title = re.sub(r'\s*Subtitle\s*Indonesia', '', selected['title'], flags=re.IGNORECASE).strip()
+    
+    console.print(f"\n[bold green]✓[/bold green] [bold cyan]{anime_title}[/bold cyan]")
+    console.print(f"   [dim]Source: {src.upper()} | Status: {selected.get('status', '-')}[/dim]")
+
+    # ===== STEP 4: Ambil Episode =====
+    with console.status(f"[bold green]📥 Mengambil episode...[/bold green]"):
+        episodes = get_episode_list(src, selected["url"])
+
+    print_episode_list(episodes, anime_title)
+    if not episodes:
+        return
+
+    # ===== STEP 5: Pilih Mode & Episode =====
+    console.print("\n[bold]🎯 Pilih Mode[/bold]")
+    console.print("  [cyan]1[/cyan]. Nonton 1 episode")
+    console.print("  [yellow]M[/yellow]. Marathon / Auto-play (nonton berurutan)")
+    console.print()
+    
+    mode = Prompt.ask("Pilih", choices=["1", "m", "M"], default="1").lower()
+    
+    ep_numbers = [ep["episode_num"] for ep in episodes]
+    start_ep = episodes[-1]["episode_num"]  # Default: episode terbaru
+    
+    if mode == "1":
+        # Single episode
+        console.print(f"\n[dim]Tersedia: Ep {ep_numbers[0]} – {ep_numbers[-1]}[/dim]")
+        ep_choice = IntPrompt.ask("Nomor episode", default=start_ep)
+        
+        selected_eps = []
+        for ep in episodes:
+            if ep["episode_num"] == ep_choice:
+                selected_eps.append(ep)
+                break
+        if not selected_eps and 1 <= ep_choice <= len(episodes):
+            selected_eps.append(episodes[ep_choice - 1])
+        
+        if not selected_eps:
+            console.print(f"[red]❌ Episode {ep_choice} tidak ditemukan.[/red]")
+            return
+    
+    else:
+        # Marathon / Auto-play
+        console.print(f"\n[dim]Tersedia: Ep {ep_numbers[0]} – {ep_numbers[-1]}[/dim]")
+        start = IntPrompt.ask("Mulai dari episode", default=start_ep)
+        end = IntPrompt.ask("Sampai episode", default=ep_numbers[-1])
+        
+        selected_eps = [ep for ep in episodes if start <= ep["episode_num"] <= end]
+        if not selected_eps:
+            console.print("[red]❌ Tidak ada episode dalam range tersebut.[/red]")
+            return
+        
+        console.print(f"[green]✓ Akan memutar {len(selected_eps)} episode (Ep {start} – {end})[/green]")
+
+    # ===== STEP 6: Ambil Video URL (untuk episode pertama) =====
+    selected_videos = []
+    stream_urls = []
+    
+    for ep in selected_eps:
+        ep_title_clean = re.sub(r'\s*Subtitle\s*Indonesia', '', ep['title'], flags=re.IGNORECASE).strip()
+        
+        with console.status(f"[bold green]🔗 Mengambil link: Ep {ep['episode_num']}...[/bold green]"):
+            videos = get_video_urls(src, ep["url"])
+        
+        if videos:
+            selected_videos.append({
+                "ep": ep,
+                "title": ep_title_clean,
+                "videos": videos,
+            })
+    
+    if not selected_videos:
+        console.print("[red]❌ Gagal mendapatkan link video.[/red]")
+        return
+
+    # Tampilkan pilihan video untuk episode pertama
+    first_videos = selected_videos[0]["videos"]
+    print_video_options(first_videos)
+    
+    # ===== STEP 7: Pilih Kualitas (untuk semua episode) =====
+    console.print()
+    default_video_idx = _pick_best_video(first_videos)
+    vid_choice = IntPrompt.ask(
+        "Pilih sumber video",
+        default=default_video_idx + 1,
+        choices=[str(i) for i in range(1, len(first_videos) + 1)],
+    )
+    
+    # ===== STEP 8: Play atau Download =====
+    console.print()
+    actions = ["play"]
+    if mode == "m":
+        actions.append("play-all")
+    actions.extend(["download", "copy-url", "batal"])
+    
+    if mode == "1":
+        action = Prompt.ask("Aksi", choices=actions, default="play")
+    else:
+        action = Prompt.ask("Aksi", choices=actions, default="play-all")
+    
+    title_full = f"{anime_title} - {selected_eps[0]['title']}"
+    title_full = re.sub(r'\s*Subtitle\s*Indonesia', '', title_full, flags=re.IGNORECASE).strip()
+    
+    if action == "play":
+        # Play satu episode
+        first = selected_videos[0]
+        vid = first["videos"][vid_choice - 1]
+        stream_url = resolve_stream_url(src, vid["url"])
+        
+        ep_title = first["title"]
+        play_title = f"{anime_title} - {ep_title}"
+        
+        play_video(stream_url, quality=vid["quality"], title=play_title)
+        
+        # Tanya mau auto-play next?
+        if len(selected_videos) > 1:
+            console.print()
+            if Confirm.ask("Lanjut ke episode berikutnya?", default=False):
+                _auto_play_remaining(selected_videos[1:], vid_choice - 1, anime_title, src)
+    
+    elif action == "play-all":
+        # Auto-play semua episode
+        video_list = []
+        for ep_data in selected_videos:
+            vid = ep_data["videos"][vid_choice - 1]
+            stream_url = resolve_stream_url(src, vid["url"])
+            video_list.append((stream_url, vid["quality"], ep_data["title"]))
+        
+        play_multiple(video_list, title_prefix=anime_title)
+    
+    elif action == "download":
+        ep_data = selected_videos[0]
+        vid = ep_data["videos"][vid_choice - 1]
+        
+        safe_filename = re.sub(r'[^\w\s\-_.()]', '', title_full).replace(' ', '_')
+        output_path = f"./{safe_filename}.mp4"
+        download_video(vid["url"], output_path=output_path, title=title_full, quality=vid["quality"])
+    
+    elif action == "copy-url":
+        ep_data = selected_videos[0]
+        vid = ep_data["videos"][vid_choice - 1]
+        url = vid["url"]
+        console.print(f"\n[cyan]{url}[/cyan]")
+        
+        try:
+            import pyperclip
+            pyperclip.copy(url)
+            console.print("[green]✓ URL disalin![/green]")
+        except ImportError:
+            pass
+    
+    else:
+        console.print("[dim]Dibatalkan. 🎌[/dim]")
+
+
+def _auto_play_remaining(remaining_videos: list, vid_idx: int, anime_title: str, src: str):
+    """Auto-play sisa episode setelah episode pertama selesai."""
+    video_list = []
+    for ep_data in remaining_videos:
+        try:
+            vid = ep_data["videos"][vid_idx]
+            stream_url = resolve_stream_url(src, vid["url"])
+            video_list.append((stream_url, vid["quality"], ep_data["title"]))
+        except (IndexError, Exception):
+            # Fallback ke video pertama jika index tidak valid
+            if ep_data["videos"]:
+                vid = ep_data["videos"][0]
+                stream_url = resolve_stream_url(src, vid["url"])
+                video_list.append((stream_url, vid["quality"], ep_data["title"]))
+    
+    if video_list:
+        play_multiple(video_list, title_prefix=anime_title)
+
+
+def flow_quick_play(anime_query: str, episode_num: int | None = None):
+    """Quick play dari CLI — search all sources, play first result."""
+    with console.status(f"[bold green]🔎 Mencari: {anime_query}...[/bold green]"):
+        results = search_all(anime_query)
+
+    if not results:
+        console.print(f"[red]❌ Tidak ditemukan: '{anime_query}'[/red]")
+        return
+
+    selected = results[0]
+    src = selected.get("source", "otakudesu")
+    anime_title = re.sub(r'\s*Subtitle\s*Indonesia', '', selected['title'], flags=re.IGNORECASE).strip()
+    console.print(f"[green]✓[/green] [cyan]{anime_title}[/cyan] [dim]({src.upper()})[/dim]")
+
+    with console.status("[bold green]📥 Mengambil episode...[/bold green]"):
+        episodes = get_episode_list(src, selected["url"])
+
+    if not episodes:
+        console.print("[red]❌ Tidak ada episode.[/red]")
+        return
+
+    if episode_num is None:
+        ep = episodes[-1]
+    else:
+        ep = next((e for e in episodes if e["episode_num"] == episode_num), None)
+        if not ep:
+            console.print(f"[red]❌ Episode {episode_num} tidak ditemukan.[/red]")
+            console.print(f"[dim]Tersedia: Ep {episodes[0]['episode_num']} - {episodes[-1]['episode_num']}[/dim]")
+            return
+
+    ep_title = re.sub(r'\s*Subtitle\s*Indonesia', '', ep['title'], flags=re.IGNORECASE).strip()
+    console.print(f"[green]✓[/green] {ep_title}")
+
+    with console.status("[bold green]🔗 Mengambil link video...[/bold green]"):
+        videos = get_video_urls(src, ep["url"])
+
+    if not videos:
+        console.print("[red]❌ Tidak ada link video.[/red]")
+        return
+
+    vid = videos[0]
+    stream_url = resolve_stream_url(src, vid["url"])
+    full_title = f"{anime_title} - {ep_title}"
+    
+    play_video(stream_url, quality=vid["quality"], title=full_title)
+
+
+def flow_download_only(anime_query: str, episode_num: int, quality: str = "720p"):
+    """Download mode dari CLI — search all sources, download episode tertentu."""
+    with console.status(f"[bold green]🔎 Mencari: {anime_query}...[/bold green]"):
+        results = search_all(anime_query)
+
+    if not results:
+        console.print(f"[red]❌ Tidak ditemukan: '{anime_query}'[/red]")
+        return
+
+    selected = results[0]
+    src = selected.get("source", "otakudesu")
+    anime_title = re.sub(r'\s*Subtitle\s*Indonesia', '', selected['title'], flags=re.IGNORECASE).strip()
+    console.print(f"[green]✓[/green] [cyan]{anime_title}[/cyan] [dim]({src.upper()})[/dim]")
+
+    with console.status("[bold green]📥 Mengambil episode...[/bold green]"):
+        episodes = get_episode_list(src, selected["url"])
+
+    if not episodes:
+        console.print("[red]❌ Tidak ada episode.[/red]")
+        return
+
+    ep = next((e for e in episodes if e["episode_num"] == episode_num), None)
+    if not ep:
+        console.print(f"[red]❌ Episode {episode_num} tidak ditemukan.[/red]")
+        console.print(f"[dim]Tersedia: Ep {episodes[0]['episode_num']} - {episodes[-1]['episode_num']}[/dim]")
+        return
+
+    ep_title = re.sub(r'\s*Subtitle\s*Indonesia', '', ep['title'], flags=re.IGNORECASE).strip()
+    console.print(f"[green]✓[/green] {ep_title}")
+
+    with console.status("[bold green]🔗 Mengambil link video...[/bold green]"):
+        videos = get_video_urls(src, ep["url"])
+
+    if not videos:
+        console.print("[red]❌ Tidak ada link video.[/red]")
+        return
+
+    vid = None
+    q_lower = quality.lower()
+    for v in videos:
+        if q_lower in v.get("quality", "").lower() and v.get("source") == "download_mirror":
+            vid = v
+            break
+    if not vid:
+        for v in videos:
+            if v.get("source") == "download_mirror":
+                vid = v
+                break
+    if not vid:
+        vid = videos[0]
+
+    title_full = f"{anime_title} - {ep_title}"
+    safe_filename = re.sub(r'[^\w\s\-_.()]', '', title_full).replace(' ', '_')
+    output_path = f"./{safe_filename}.mp4"
+    download_video(vid["url"], output_path=output_path, title=title_full, quality=vid["quality"])
+
+
+def main():
+    """Entry point dipanggil dari pyproject.toml -> anicli_id.cli:main"""
+    flow_search_and_play()
