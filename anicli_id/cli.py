@@ -15,6 +15,7 @@ from rich.text import Text
 from .sources import search_all, get_episode_list, get_video_urls, resolve_stream_url
 from .scrapers import list_sources
 from .player import play_video, play_multiple, download_video, check_mpv_installed, list_available_players
+from .rpc import discord_rpc
 
 console = Console()
 
@@ -228,6 +229,7 @@ def flow_search_and_play():
         console.print("[yellow]Query kosong.[/yellow]")
         return
 
+    discord_rpc.set_searching(query)
     with console.status("[bold green] Mencari di semua sumber...[/bold green]"):
         if source_id == "all":
             results = search_all(query)
@@ -353,6 +355,7 @@ def flow_search_and_play():
         
         ep_title = first["title"]
         play_title = f"{anime_title} - {ep_title}"
+        discord_rpc.set_watching(anime_title, first["ep"]["episode_num"], src)
         needs_ytdlp = vid.get("source") != "direct_stream"
         
         ok = play_video(stream_url, quality=vid["quality"], title=play_title, use_ytdlp=False, audio_url=vid.get("audio_url", ""))

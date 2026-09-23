@@ -8,9 +8,11 @@ import argparse
 
 from .cli import flow_search_and_play, flow_quick_play, flow_download_only, console
 from .scrapers import list_sources
+from .rpc import discord_rpc
 
 
 def main():
+    discord_rpc.connect()
     sources_info = "\n".join(
         f"  {s['id']:12s} — {s['name']:12s} {s['description']}"
         for s in list_sources()
@@ -85,17 +87,20 @@ def main():
 
     args = parser.parse_args()
 
-    if args.query:
-        if args.download:
-            if not args.episode:
-                console.print("[red] Download mode perlu nomor episode (-e / --episode)[/red]")
-                console.print("[dim]Contoh: anicli-id \"frieren\" -d -e 10[/dim]\n")
-                sys.exit(1)
-            flow_download_only(args.query, args.episode, args.quality)
+    try:
+        if args.query:
+            if args.download:
+                if not args.episode:
+                    console.print("[red] Download mode perlu nomor episode (-e / --episode)[/red]")
+                    console.print("[dim]Contoh: anicli-id \"frieren\" -d -e 10[/dim]\n")
+                    sys.exit(1)
+                flow_download_only(args.query, args.episode, args.quality)
+            else:
+                flow_quick_play(args.query, args.episode, args.source)
         else:
-            flow_quick_play(args.query, args.episode, args.source)
-    else:
-        flow_search_and_play()
+            flow_search_and_play()
+    finally:
+        discord_rpc.close()
 
 
 if __name__ == "__main__":
