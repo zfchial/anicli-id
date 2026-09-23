@@ -37,6 +37,7 @@ SOURCE_COLORS = {
     "otakudesu": "blue",
     "anoboy": "green",
     "samehadaku": "yellow",
+    "muse_indonesia": "red",
 }
 
 
@@ -379,7 +380,7 @@ def flow_search_and_play():
         play_title = f"{anime_title} - {ep_title}"
         needs_ytdlp = vid.get("source") != "direct_stream"
         
-        ok = play_video(stream_url, quality=vid["quality"], title=play_title, use_ytdlp=False)
+        ok = play_video(stream_url, quality=vid["quality"], title=play_title, use_ytdlp=False, audio_url=vid.get("audio_url", ""))
         if not ok:
             for alt in first["videos"]:
                 if alt is vid or alt.get("source") != "direct_stream":

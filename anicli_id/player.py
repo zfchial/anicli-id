@@ -21,7 +21,7 @@ def check_ytdlp_installed() -> bool:
     return shutil.which("yt-dlp") is not None
 
 
-def play_video(url: str, quality: str = "", title: str = "", use_ytdlp: bool = True) -> bool:
+def play_video(url: str, quality: str = "", title: str = "", use_ytdlp: bool = True, audio_url: str = "") -> bool:
     """
     Putar video menggunakan mpv.
     
@@ -41,7 +41,7 @@ def play_video(url: str, quality: str = "", title: str = "", use_ytdlp: bool = T
         print("  • Windows:      choco install mpv")
         return False
 
-    return _play_direct(url, quality, title)
+    return _play_direct(url, quality, title, audio_url)
 
 
 def play_multiple(video_list: list[tuple], title_prefix: str = "") -> bool:
@@ -108,7 +108,7 @@ def _play_with_ytdlp(url: str, quality: str = "", title: str = "") -> bool:
         return _play_direct(url, quality, title)
 
 
-def _play_direct(url: str, quality: str = "", title: str = "") -> bool:
+def _play_direct(url: str, quality: str = "", title: str = "", audio_url: str = "") -> bool:
     display_title = title or "Anime"
     
     cmd = [
@@ -116,9 +116,10 @@ def _play_direct(url: str, quality: str = "", title: str = "") -> bool:
         f"--title={display_title}",
         "--force-window=immediate",
         "--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "--",
-        url,
     ]
+    if audio_url:
+        cmd.append(f"--audio-file={audio_url}")
+    cmd.extend(["--", url])
 
     if "otakudesu" in url or "desustream" in url:
         cmd[4:4] = ["--referrer=https://otakudesu.blog/"]

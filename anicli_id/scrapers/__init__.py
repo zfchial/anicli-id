@@ -6,6 +6,7 @@ Anoboy: disabled (domain mati)
 
 from . import otakudesu
 from . import samehadaku
+from . import muse_indonesia
 
 SOURCES = {
     "otakudesu": {
@@ -19,6 +20,12 @@ SOURCES = {
         "url": "https://samehadaku.li",
         "description": "Anime Sub Indo populer dengan update lengkap",
         "module": samehadaku,
+    },
+    "muse_indonesia": {
+        "name": "Muse Indonesia",
+        "url": "https://www.youtube.com/@MuseIndonesia",
+        "description": "Anime resmi YouTube Muse Indonesia",
+        "module": muse_indonesia,
     },
 }
 
