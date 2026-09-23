@@ -379,7 +379,14 @@ def flow_search_and_play():
         play_title = f"{anime_title} - {ep_title}"
         needs_ytdlp = vid.get("source") != "direct_stream"
         
-        play_video(stream_url, quality=vid["quality"], title=play_title, use_ytdlp=needs_ytdlp)
+        ok = play_video(stream_url, quality=vid["quality"], title=play_title, use_ytdlp=False)
+        if not ok:
+            for alt in first["videos"]:
+                if alt is vid or alt.get("source") != "direct_stream":
+                    continue
+                alt_url = resolve_stream_url(src, alt["url"])
+                if play_video(alt_url, quality=alt["quality"], title=play_title, use_ytdlp=False):
+                    break
         
         if len(selected_videos) > 1:
             console.print()
