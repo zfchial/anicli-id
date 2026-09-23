@@ -125,10 +125,12 @@ def _play_direct(url: str, quality: str = "", title: str = "") -> bool:
         f"--title={display_title}",
         "--force-window=immediate",
         "--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "--referrer=https://otakudesu.blog/",
         "--",
         url,
     ]
+
+    if "otakudesu" in url or "desustream" in url:
+        cmd[4:4] = ["--referrer=https://otakudesu.blog/"]
 
     print(f"\n  Memutar: {display_title}")
     print(f"   Kualitas: {quality or 'default'}")
