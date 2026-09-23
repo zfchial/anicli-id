@@ -18,20 +18,7 @@ from .player import play_video, play_multiple, download_video, check_mpv_install
 
 console = Console()
 
-BANNER = """
-[bold magenta]
-    ╔═════════════════════════════════════════╗
-    ║                                       ║
-    ║       ANICLI-ID  v0.3.0          ║
-    ║     Nonton Anime Sub Indo             ║
-    ║     Langsung dari Terminal            ║
-    ║                                       ║
-    ║     Sources: Otakudesu,               ║
-    ║              Samehadaku               ║
-    ║                                       ║
-    ╚═════════════════════════════════════════╝
-[/bold magenta]
-"""
+BANNER = "[bold magenta]ANICLI-ID[/bold magenta] [dim]v0.3.0[/dim]"
 
 SOURCE_COLORS = {
     "otakudesu": "blue",
@@ -42,28 +29,18 @@ SOURCE_COLORS = {
 
 
 def print_banner():
-    console.print(Panel(BANNER, border_style="magenta", padding=(1, 3)))
+    console.print(Panel(BANNER, subtitle="Nonton anime dari terminal", border_style="magenta", padding=(0, 2)))
 
 
 def print_system_info():
     tools = list_available_players()
-    icons = {True: "[green][/green]", False: "[red]✗[/red]"}
-    
-    sources = list_sources()
-    sources_str = "  ".join(
-        f"[{SOURCE_COLORS.get(s['id'], 'cyan')}]{s['name']}[/{SOURCE_COLORS.get(s['id'], 'cyan')}]"
-        for s in sources
-    )
-    
-    info = (
-        f"[cyan]Sumber:[/cyan] {sources_str}\n"
-        f"[cyan]Tools:[/cyan] mpv {icons[tools['mpv']]}  "
-        f"yt-dlp {icons[tools['yt-dlp']]}  "
-        f"curl {icons[tools['curl']]}  "
-        f"wget {icons[tools['wget']]}"
-    )
-    
-    console.print(Panel(info, border_style="dim", padding=(0, 2)))
+    table = Table(box=None, show_header=False, padding=(0, 1))
+    table.add_column("Label", style="cyan")
+    table.add_column("Value")
+    table.add_row("Sumber", ", ".join(s["name"] for s in list_sources()))
+    table.add_row("Player", "[green]mpv siap[/green]" if tools["mpv"] else "[red]mpv tidak ditemukan[/red]")
+    table.add_row("YouTube", "[green]yt-dlp siap[/green]" if tools["yt-dlp"] else "[yellow]yt-dlp tidak ditemukan[/yellow]")
+    console.print(Panel(table, title="Status", border_style="dim", padding=(0, 1)))
 
 
 def print_search_results(results: list[dict]):
@@ -73,7 +50,7 @@ def print_search_results(results: list[dict]):
         return
 
     table = Table(
-        title=f" Hasil Pencarian ({len(results)} anime dari semua sumber)",
+        title=f"Hasil Pencarian · {len(results)} hasil",
         title_style="bold cyan",
         show_header=True,
         header_style="bold magenta",
@@ -81,10 +58,9 @@ def print_search_results(results: list[dict]):
         pad_edge=True,
     )
     table.add_column("#", style="dim", width=4, justify="center")
-    table.add_column("Judul Anime", style="bold cyan", min_width=40)
-    table.add_column("Source", justify="center", min_width=10)
-    table.add_column("Status", style="green", justify="center")
-    table.add_column("Rating", style="yellow", justify="center")
+    table.add_column("Judul Anime", style="bold cyan", min_width=36, overflow="ellipsis")
+    table.add_column("Sumber", justify="center", min_width=12)
+    table.add_column("Info", style="green", justify="center", overflow="ellipsis")
 
     for i, anime in enumerate(results, 1):
         title = anime["title"]
@@ -96,10 +72,9 @@ def print_search_results(results: list[dict]):
         
         table.add_row(
             str(i),
-            title[:50] + ("..." if len(title) > 50 else ""),
+            title,
             source_display,
-            anime.get("status", "-"),
-            anime.get("rating", "-"),
+            anime.get("status") or anime.get("rating") or "-",
         )
 
     console.print(table)
@@ -114,7 +89,7 @@ def print_episode_list(episodes: list[dict], anime_title: str = ""):
     total = len(episodes)
     
     table = Table(
-        title=f" Daftar Episode — {anime_title[:40]} ({total} eps)",
+        title=f"Episode · {anime_title[:40]} · {total} tersedia",
         title_style="bold green",
         show_header=True,
         header_style="bold green",
@@ -135,7 +110,7 @@ def print_episode_list(episodes: list[dict], anime_title: str = ""):
         table.add_row(str(i), ep_str, title[:60])
 
     console.print(table)
-    console.print(f"[dim]Ep {ep_numbers[0]} – {ep_numbers[-1]}  |  1-{len(episodes)} untuk pilih[/dim]")
+    console.print(f"[dim]Rentang episode: {ep_numbers[0]}–{ep_numbers[-1]} · pilih nomor episode[/dim]")
 
 
 def print_video_options(videos: list[dict]):
@@ -144,7 +119,7 @@ def print_video_options(videos: list[dict]):
         return
 
     table = Table(
-        title=f" Pilih Sumber Video ({len(videos)} pilihan)",
+        title=f"Sumber Video · {len(videos)} pilihan",
         title_style="bold yellow",
         show_header=True,
         header_style="bold yellow",
@@ -175,17 +150,17 @@ def print_video_options(videos: list[dict]):
 def select_source() -> str | None:
     sources = list_sources()
     
-    console.print("\n[bold] Pilih Sumber Streaming[/bold]\n")
+    console.print("\n[bold cyan]Sumber Streaming[/bold cyan]")
+    console.print("[dim]Pilih sumber untuk mencari judul anime[/dim]\n")
     
     for i, s in enumerate(sources, 1):
         color = SOURCE_COLORS.get(s["id"], "cyan")
-        console.print(f"  [{color}]{i}[/{color}]. [bold {color}]{s['name']}[/bold {color}]")
-        console.print(f"     [dim]{s['description']}[/dim]")
+        console.print(f"  [{color}]{i}[/{color}] [bold {color}]{s['name']}[/bold {color}] — [dim]{s['description']}[/dim]")
     
-    console.print(f"  [yellow]A[/yellow]. Search ALL (gabung hasil dari semua source)")
+    console.print("  [yellow]A[/yellow] [bold]Semua sumber[/bold] — [dim]gabungkan hasil pencarian[/dim]")
     console.print()
     
-    choice = Prompt.ask("Pilih", default="1")
+    choice = Prompt.ask("Pilihan", default="1")
     
     if choice.upper() == "A":
         return "all"
