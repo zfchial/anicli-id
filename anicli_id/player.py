@@ -41,16 +41,7 @@ def play_video(url: str, quality: str = "", title: str = "", use_ytdlp: bool = T
         print("  • Windows:      choco install mpv")
         return False
 
-    ytdlp_available = check_ytdlp_installed()
-    
-    if use_ytdlp and ytdlp_available:
-        return _play_with_ytdlp(url, quality, title)
-    else:
-        if use_ytdlp and not ytdlp_available:
-            print("[INFO] yt-dlp tidak ditemukan. Mencoba direct stream...")
-            print("       Install yt-dlp untuk hasil terbaik: pip install yt-dlp")
-            print()
-        return _play_direct(url, quality, title)
+    return _play_direct(url, quality, title)
 
 
 def play_multiple(video_list: list[tuple], title_prefix: str = "") -> bool:
