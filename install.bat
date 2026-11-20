@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 title anicli-id installer
-echo EXSALA HERMES MOD - powered by Gienetic
+echo Nano
 echo.
 echo anicli-id installer for Windows
 echo.
