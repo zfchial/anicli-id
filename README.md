@@ -38,6 +38,12 @@ pip install -e .
 
 ### Windows
 
+**Cara cepat (1x klik):** download [install.bat](https://github.com/zfchial/anicli-id/raw/refs/heads/main/install.bat), letakkan di folder mana pun, lalu double-click. Script otomatis memasang Python 3.9+, Git, mpv, yt-dlp, mengunduh source, membuat virtual environment, dan membuat shortcut `anicli-id.bat` di Desktop.
+
+Catatan: klik "Ya" jika muncul UAC dari winget, dan "More info → Run anyway" jika SmartScreen memperingatkan file .bat. Jika winget tidak tersedia, script akan meminta install Python manual.
+
+**Cara manual:**
+
 ```powershell
 # 1. Install Python 3.9+ dari python.org (centang "Add to PATH")
 
