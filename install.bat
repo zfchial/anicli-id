@@ -27,6 +27,12 @@ if not defined PY (
   )
 )
 if not defined PY (
+  echo Downloading Python 3.12 installer.
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe' -OutFile '%TEMP%\python-3.12.10-amd64.exe'"
+  if not errorlevel 1 "%TEMP%\python-3.12.10-amd64.exe" /quiet InstallAllUsers=0 PrependPath=1 Include_pip=1
+  for %%P in ("%LOCALAPPDATA%\Programs\Python\Python312\python.exe" "%ProgramFiles%\Python312\python.exe") do if not defined PY if exist %%~P set "PY=%%~P"
+)
+if not defined PY (
   echo Install Python 3.9+ from https://www.python.org/downloads/ then run this file again.
   goto :fail
 )
